@@ -1,11 +1,12 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-btn_add_manga = KeyboardButton("/Новая_манга")
-btn_add = KeyboardButton("/Добавить_том")
-btn_delete = KeyboardButton("/Удалить_мангу")
-btn_delete_tom = KeyboardButton("/Удалить_том")
+
+btn_add_main_menu = KeyboardButton("/Новая_манга")
+btn_add_content = KeyboardButton("/Добавить_том")
+btn_delete_main_menu = KeyboardButton("/Удалить_мангу")
+btn_delete_content = KeyboardButton("/Удалить_том")
 
 btn_case_admin = ReplyKeyboardMarkup(resize_keyboard=True)
 
-btn_case_admin.row(btn_add_manga, btn_add)
-btn_case_admin.row(btn_delete, btn_delete_tom)
+btn_case_admin.row(btn_add_main_menu, btn_add_content)
+btn_case_admin.row(btn_delete_main_menu, btn_delete_content)

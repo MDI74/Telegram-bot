@@ -12,37 +12,37 @@ ID = None
 PAGE = 1
 ADMIN_ID = os.getenv('ADMINS')
 
-#Класс машины состоя для загрузки томов
-class FSMAdmin(StatesGroup):
-    manga = State()
-    url = State()
-    tom = State()
+
+#Класс машины состояния для загрузки контента
+class FSMAddMainContent(StatesGroup):
+    name_main = State()
+    content_url = State()
+    content_desc = State()
 
 
-#Класс машины состоя для загрузки манги
-class FSMAdd(StatesGroup):
-    manga = State()
+#Класс машины состояния для загрузки название на главную страницу
+class FSMAddContent(StatesGroup):
+    name_main = State()
 
 
+#Функция проверки на администратора
 async def make_change_command(message: types.Message):
     global ID
     ID = message.from_user.id
-    print(ID)
-    print(ADMIN_ID)
     if str(ID) in ADMIN_ID:
         await bot.send_message(message.from_user.id, "Приветствую админ", reply_markup=admin_kb.btn_case_admin)
         await message.delete()
 
 
-#Начало диалога загрузки манги
+#Начало диалога загрузки названия на главную страницу
 async def cm_add(message: types.Message):
     if message.from_user.id == ID:
-        await FSMAdd.manga.set()
+        await FSMAddContent.name_main.set()
         await message.reply('Введите название манги')
 
 
-#Функция добавления название манги
-async def add_manga(message: types.Message, state: FSMContext):
+#Функция добавления название в главное меню
+async def add_main_menu(message: types.Message, state: FSMContext):
     if message.from_user.id == ID:
         if message.text == 'отмена':
             await state.finish()
@@ -50,16 +50,16 @@ async def add_manga(message: types.Message, state: FSMContext):
         else:
             async with state.proxy() as data:
                 data['manga'] = message.text
-            await FSMAdd.next()
-            await sqlite_db.sql_add_manga(data)
+            await FSMAddContent.next()
+            await sqlite_db.sql_add_name(data)
             await message.reply('Успешно добавлено')
             await state.finish()
 
 
-#Начало диалога загрузки тома
+#Начало диалога загрузки контент
 async def cm_start(message: types.Message):
     if message.from_user.id == ID:
-        await FSMAdmin.manga.set()
+        await FSMAddMainContent.name_main.set()
         await message.reply('Введите название манги')
 
 
@@ -74,11 +74,11 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 
 #Ловим первый ответ и записываем в словарь
-async def load_manga(message: types.Message, state: FSMContext):
+async def load_name_main(message: types.Message, state: FSMContext):
     if message.from_user.id == ID:
         id_manga = 0
-        inline.add_manga(await sqlite_db.sql_read_all_manga(PAGE))
-        read = await sqlite_db.sql_read_name_manga(message.text)
+        inline.add_main_menu(await sqlite_db.sql_read_all_name(PAGE))
+        read = await sqlite_db.sql_read_name_main_content(message.text)
         for ret in read:
             id_manga = ret[0]
         if id_manga == 0:
@@ -87,56 +87,56 @@ async def load_manga(message: types.Message, state: FSMContext):
         else:
             async with state.proxy() as data:
                 data['manga'] = id_manga
-            await FSMAdmin.next()
+            await FSMAddMainContent.next()
             await message.reply("Введите ссылку на том")
 
 
 #Ловим второй ответ и записываем в словарь
-async def load_url(message: types.Message, state: FSMContext):
+async def load_content_url(message: types.Message, state: FSMContext):
     if message.from_user.id == ID:
         async with state.proxy() as data:
             data['url'] = message.text
-        await FSMAdmin.next()
+        await FSMAddMainContent.next()
         await message.reply("Введите том")
 
 
 #Ловим последний ответ и используем полученные данные
-async def load_tom(message: types.Message, state: FSMContext):
+async def load_content_desc(message: types.Message, state: FSMContext):
     if message.from_user.id == ID:
         async with state.proxy() as data:
             data['tom'] = message.text
-        await sqlite_db.sql_add_tom(state)
+        await sqlite_db.sql_add_content(state)
     await message.reply('Успешно добавлено')
     await state.finish()
 
 
-#Функция обратной связи удаления манги
-async def del_callback_manga(callback_query: types.CallbackQuery):
-    await sqlite_db.sql_delete_manga(callback_query.data.replace('del ', ''))
+#Функция обратной связи удаления кнопки с названием на главной странице
+async def del_callback_main_menu(callback_query: types.CallbackQuery):
+    await sqlite_db.sql_delete_name(callback_query.data.replace('del ', ''))
     await callback_query.answer(text=f'{callback_query.data.replace("del ","")} удалена.', show_alert=True)
     await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
 
 
-#Функция обратной связи удаления тома
-async def del_callback_tom(callback_query: types.CallbackQuery):
-    await sqlite_db.sql_delete_tom(callback_query.data.replace('dtom ', ''))
+#Функция обратной связи удаления контента
+async def del_callback_content(callback_query: types.CallbackQuery):
+    await sqlite_db.sql_delete_content(callback_query.data.replace('dtom ', ''))
     await callback_query.answer(text=f'{callback_query.data.replace("dtom ","")} удалена.', show_alert=True)
     await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
 
 
-#Функция удаления манги
-async def delete_manga(message: types.Message):
+#Функция удаления названи кнопки на главной странице
+async def delete_main_menu(message: types.Message):
     if message.from_user.id == ID:
-        read = await sqlite_db.sql_read_del_manga()
+        read = await sqlite_db.sql_read_del_name()
         for ret in read:
             await bot.send_message(message.from_user.id, f'{ret[1]}\n')
             await bot.send_message(message.from_user.id, text="^", reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(f'Удалить {ret[1]}', callback_data=f'del {ret[0]}')))
 
 
-#Функция удаления тома
-async def delete_tom(message: types.Message):
+#Функция удаления контента
+async def delete_content(message: types.Message):
     if message.from_user.id == ID:
-        read = await sqlite_db.sql_read_del_tom()
+        read = await sqlite_db.sql_read_del_content()
         for ret in read:
             await bot.send_message(message.from_user.id, f'{ret[2]}\n, {ret[3]}')
             await bot.send_message(message.from_user.id, text="^", reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(f'Удалить {ret[3]}', callback_data=f'dtom {ret[0]}')))
@@ -144,18 +144,18 @@ async def delete_tom(message: types.Message):
 
 def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(cm_add, commands=['новая_манга'], state=None)
-    dp.register_message_handler(add_manga, state=FSMAdd.manga)
+    dp.register_message_handler(add_main_menu, state=FSMAddContent.name_main)
     dp.register_message_handler(cm_start, commands=['добавить_том'], state=None)
     dp.register_message_handler(cancel_handler, state="*", commands='отмена')
     dp.register_message_handler(cancel_handler, Text(equals='отмена', ignore_case=True), state="*")
-    dp.register_message_handler(load_manga, state=FSMAdmin.manga)
-    dp.register_message_handler(load_url, state=FSMAdmin.url)
-    dp.register_message_handler(load_tom, state=FSMAdmin.tom)
+    dp.register_message_handler(load_name_main, state=FSMAddMainContent.name_main)
+    dp.register_message_handler(load_content_url, state=FSMAddMainContent.content_url)
+    dp.register_message_handler(load_content_desc, state=FSMAddMainContent.content_desc)
     dp.register_message_handler(make_change_command, commands=['moderator'], is_chat_admin=True)
-    dp.register_message_handler(delete_manga, commands=['удалить_мангу'])
-    dp.register_message_handler(delete_tom, commands=['удалить_том'])
-    dp.register_callback_query_handler(del_callback_manga, lambda x: x.data and x.data.startswith('del'))
-    dp.register_callback_query_handler(del_callback_tom, lambda x: x.data and x.data.startswith('dtom'))
+    dp.register_message_handler(delete_main_menu, commands=['удалить_мангу'])
+    dp.register_message_handler(delete_content, commands=['удалить_том'])
+    dp.register_callback_query_handler(del_callback_main_menu, lambda x: x.data and x.data.startswith('del'))
+    dp.register_callback_query_handler(del_callback_content, lambda x: x.data and x.data.startswith('dtom'))
 
 
 

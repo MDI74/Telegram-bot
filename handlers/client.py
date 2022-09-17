@@ -4,11 +4,17 @@ from keyboards import client_kb, inline
 from data_base import sqlite_db
 
 
-CHANNEL_ID = ["-1001609147352", "-1001744389432"]
+CHANNEL_ID = ["-1001609147352", "-1001744389432"] #ID каналов на которые нужно подписаться
 NOTSUB_MESSAGE = "Для доступа к функционалу бота, пожалуйста подпишитесь на каналы"
 PAGE = 1
-ID_MANGA = 0
-SORT_TOM = False
+ID_MENU_CONT = 0
+SORT_CONT = False
+
+
+#Функция получения id контента на главной странице
+def get_id(id):
+    global ID_MENU_CONT
+    ID_MENU_CONT = id
 
 
 #Функция проверка статуса пользователя
@@ -16,6 +22,7 @@ def check_sub_channel(chat_member):
     return True if chat_member['status'] != 'left' else False
 
 
+#Функция старта бота, в ней проверяется подписан ли пользователь на необходимые каналы
 async def start(message: types.Message):
     check = await sqlite_db.sql_check_user(message.from_user.id)
     if check == []:
@@ -33,8 +40,8 @@ async def start(message: types.Message):
         await bot.send_message(message.from_user.id, NOTSUB_MESSAGE, reply_markup=inline.btn_subscribes)
 
 
-#Фукнция выводящая все меню манги
-async def manga_menu(message: types.Message):
+#Фукнция выводящая главную страницу
+async def main_menu(message: types.Message):
     if message.text == "📓 Вся манга":
         global PAGE
         PAGE = 1
@@ -43,7 +50,7 @@ async def manga_menu(message: types.Message):
             if check_sub_channel(await bot.get_chat_member(chat_id=channel, user_id=message.from_user.id)):
                 count_channel += 1
         if count_channel == len(CHANNEL_ID):
-            inline.add_manga(await sqlite_db.sql_read_all_manga(PAGE))
+            inline.add_main_menu(await sqlite_db.sql_read_all_name(PAGE))
             await bot.send_message(message.from_user.id, f'Список загруженной манги страница {PAGE}', reply_markup=inline.mainmenu)
             await message.delete()
         else:
@@ -54,29 +61,23 @@ async def manga_menu(message: types.Message):
         await bot.send_message(message.from_user.id, 'Я не понимаю о чем вы')
 
 
-#Функция получения id манги
-def get_id(id):
-    global ID_MANGA
-    ID_MANGA = id
-
-
-#Фукнция обратной связи для манги
-async def process_callback_key(call: types.CallbackQuery):
+#Фукнция обратной связи для контента на главной странице
+async def callback_main_menu(call: types.CallbackQuery):
     id = ''.join(call.data.split('key')[:])
     get_id(id)
     name_manga = ''
-    id_manga = 0
-    read = await sqlite_db.sql_read_id_manga(id)
+    id_main_c = 0
+    read = await sqlite_db.sql_read_id_name(id)
     for res in read:
-        id_manga = res[0]
+        id_main_c = res[0]
         name_manga = res[1]
-    inline.add_tom(await sqlite_db.sql_read_all_tom(id_manga, PAGE))
+    inline.add_menu_content(await sqlite_db.sql_read_all_content(id_main_c, PAGE))
     await bot.delete_message(call.from_user.id, call.message.message_id)
-    await bot.send_message(call.from_user.id, f'Список загруженной манги {name_manga} cтраница {PAGE}', reply_markup=inline.menumanga)
+    await bot.send_message(call.from_user.id, f'Список загруженной манги {name_manga} cтраница {PAGE}', reply_markup=inline.menucontent)
 
 
-#Фукнция перелистывания страниц манги
-async def process_callback_btn(call: types.CallbackQuery):
+#Фукнция перелистывания страниц главной страницы
+async def callback_btn_main_menu(call: types.CallbackQuery):
     global PAGE
     id = call.data[-1]
     if id == 'R' and PAGE != 50:
@@ -84,15 +85,15 @@ async def process_callback_btn(call: types.CallbackQuery):
     elif id == 'L' and PAGE != 1:
         PAGE -= 1
     await bot.answer_callback_query(call.id)
-    inline.add_manga(await sqlite_db.sql_read_all_manga(PAGE))
+    inline.add_main_menu(await sqlite_db.sql_read_all_name(PAGE))
     await bot.delete_message(call.from_user.id, call.message.message_id)
     await bot.send_message(call.from_user.id, f'Список загруженной манги страница {PAGE}', reply_markup=inline.mainmenu)
 
 
-#Фукнция перелистывания страниц томов
-async def process_callback_btn_tom(call: types.CallbackQuery):
-    global PAGE, SORT_TOM
-    id_manga = 0
+#Фукнция перелистывания страниц контента
+async def callback_btn_menu_content(call: types.CallbackQuery):
+    global PAGE, SORT_CONT
+    id_main_c = 0
     name_manga = ''
     id = call.data[-1]
     if id == 'R' and PAGE != 50:
@@ -103,33 +104,32 @@ async def process_callback_btn_tom(call: types.CallbackQuery):
         PAGE = 1
     elif id == 'M':
         PAGE = 1
-        inline.add_manga(await sqlite_db.sql_read_all_manga(PAGE))
+        inline.add_main_menu(await sqlite_db.sql_read_all_name(PAGE))
         await bot.delete_message(call.from_user.id, call.message.message_id)
         await bot.send_message(call.from_user.id, f'Список загруженной манги страница {PAGE}', reply_markup=inline.mainmenu)
     if id == 'R' or id == 'L' or id == 'S':
-        read = await sqlite_db.sql_read_id_manga(ID_MANGA)
+        read = await sqlite_db.sql_read_id_name(ID_MENU_CONT)
         for res in read:
-            id_manga = res[0]
+            id_main_c = res[0]
             name_manga = res[1]
         if id == 'S':
-            if SORT_TOM:
-                SORT_TOM = False
-                inline.add_tom(await sqlite_db.sql_read_all_tom(id_manga, PAGE))
+            if SORT_CONT:
+                SORT_CONT = False
+                inline.add_menu_content(await sqlite_db.sql_read_all_content(id_main_c, PAGE))
             else:
-                SORT_TOM = True
-                inline.add_tom(await sqlite_db.sql_read_desc_tom(id_manga, PAGE))
+                SORT_CONT = True
+                inline.add_menu_content(await sqlite_db.sql_read_desc_content(id_main_c, PAGE))
         else:
-            if SORT_TOM:
-                inline.add_tom(await sqlite_db.sql_read_desc_tom(id_manga, PAGE))
+            if SORT_CONT:
+                inline.add_menu_content(await sqlite_db.sql_read_desc_content(id_main_c, PAGE))
             else:
-                inline.add_tom(await sqlite_db.sql_read_all_tom(id_manga, PAGE))
+                inline.add_menu_content(await sqlite_db.sql_read_all_content(id_main_c, PAGE))
         await bot.delete_message(call.from_user.id, call.message.message_id)
-        await bot.send_message(call.from_user.id, f'Список загруженных томов {name_manga} cтраница {PAGE}',
-                               reply_markup=inline.menumanga)
+        await bot.send_message(call.from_user.id, f'Список загруженных томов {name_manga} cтраница {PAGE}', reply_markup=inline.menucontent)
 
 
-#Функция проверки подписки
-async def checksub(call: types.CallbackQuery):
+#Функция проверки на подписку
+async def check_sub(call: types.CallbackQuery):
     count_channel = 0
     await bot.delete_message(call.from_user.id, call.message.message_id)
     for channel in CHANNEL_ID:
@@ -141,13 +141,14 @@ async def checksub(call: types.CallbackQuery):
         await bot.send_message(call.from_user.id, NOTSUB_MESSAGE, reply_markup=inline.btn_subscribes)
 
 
+#Регистрация хэндлеров клиента
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
-    dp.register_callback_query_handler(checksub, text=['checksub'])
-    dp.register_message_handler(manga_menu, content_types=['text'])
-    dp.register_callback_query_handler(process_callback_key, text_contains=['key'])
-    dp.register_callback_query_handler(process_callback_btn, text_contains=['btn'])
-    dp.register_callback_query_handler(process_callback_btn_tom, text_contains=['button'])
+    dp.register_callback_query_handler(check_sub, text=['checksub'])
+    dp.register_message_handler(main_menu, content_types=['text'])
+    dp.register_callback_query_handler(callback_main_menu, text_contains=['key'])
+    dp.register_callback_query_handler(callback_btn_main_menu, text_contains=['btn'])
+    dp.register_callback_query_handler(callback_btn_menu_content, text_contains=['button'])
 
 
 

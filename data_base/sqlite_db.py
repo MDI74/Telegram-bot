@@ -1,6 +1,7 @@
 import sqlite3 as sq
 
 
+#Функция расчета вывода контента в зависимости страниц
 def page_list(page):
     return str((page-1)*8), str(8)
 
@@ -18,8 +19,8 @@ def sql_start():
     base.commit()
 
 
-#Функция добавления манги в базу данных
-async def sql_add_manga(data):
+#Функция добавления названия для кнопки на главной странице в базу данных
+async def sql_add_name(data):
     cur.execute('INSERT INTO manga_list(name) VALUES (?)',  tuple(data.values()))
     base.commit()
 
@@ -35,56 +36,57 @@ async def sql_check_user(id):
     return cur.execute(f'SELECT * FROM users_list WHERE id_user =={id}').fetchall()
 
 
-#Функция добавления тома в базу данных
-async def sql_add_tom(state):
+#Функция добавления контента в базу данных
+async def sql_add_content(state):
     async with state.proxy() as data:
         cur.execute('INSERT INTO tom_list(id_manga,url,tom) VALUES (?,?,?)', tuple(data.values()))
         base.commit()
 
 
-#Функция получения всей манги из базы данных
-async def sql_read_all_manga(page):
+#Функция получения всего контента из базы данных
+async def sql_read_all_name(page):
     id_start, id_end = page_list(page)
     return cur.execute(f'SELECT * FROM manga_list LIMIT {id_start}, {id_end}').fetchall()
 
 
-#Функция получения id манги
-async def sql_read_id_manga(id):
+#Функция получения id названия из главной странице
+async def sql_read_id_name(id):
     return cur.execute(f'SELECT * FROM manga_list WHERE id =={id}').fetchall()
 
 
-async def sql_read_del_manga():
+async def sql_read_del_name():
     return cur.execute(f'SELECT * FROM manga_list').fetchall()
 
 
-#Функция получения названиям манги из базы данных
-async def sql_read_name_manga(id):
-    return cur.execute(f'SELECT * FROM manga_list WHERE name == ?', (id,)).fetchall()
-
-
-#Функция получения всех тома из базы данных
-async def sql_read_all_tom(id, page):
-    id_start, id_end = page_list(page)
-    return cur.execute(f'SELECT * FROM tom_list WHERE id_manga=={id} ORDER BY id LIMIT {id_start}, {id_end}').fetchall()
-
-
-async def sql_read_del_tom():
-    return cur.execute('SELECT * FROM tom_list').fetchall()
-
-
-#Функция удаления манги из базы данных
-async def sql_delete_manga(data):
+#Функция удаления названия на главной странице из базы данных
+async def sql_delete_name(data):
     cur.execute('DELETE FROM manga_list WHERE id == ?', (data,))
     cur.execute('DELETE FROM tom_list WHERE id_manga == ?', (data,))
     base.commit()
 
-#Функция удаления тома из базы данных
-async def sql_delete_tom(data):
+#Функция получения названия контента на главной странице из базы данных
+async def sql_read_name_main_content(id):
+    return cur.execute(f'SELECT * FROM manga_list WHERE name == ?', (id,)).fetchall()
+
+
+#Функция получения всего контента из базы данных
+async def sql_read_all_content(id, page):
+    id_start, id_end = page_list(page)
+    return cur.execute(f'SELECT * FROM tom_list WHERE id_manga=={id} ORDER BY id LIMIT {id_start}, {id_end}').fetchall()
+
+
+async def sql_read_del_content():
+    return cur.execute('SELECT * FROM tom_list').fetchall()
+
+
+#Функция удаления контента из базы данных
+async def sql_delete_content(data):
     cur.execute('DELETE FROM tom_list WHERE id == ?', (data,))
     base.commit()
 
-#Функция для сортировки таблицы
-async def sql_read_desc_tom(id, page):
+
+#Функция для сортировки контента по убыванию
+async def sql_read_desc_content(id, page):
     id_start, id_end = page_list(page)
     return cur.execute(
         f'SELECT * FROM tom_list WHERE id_manga=={id} ORDER BY id DESC LIMIT {id_start}, {id_end}').fetchall()
