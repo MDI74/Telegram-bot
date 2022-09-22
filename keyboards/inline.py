@@ -28,26 +28,59 @@ def add_menu_content(res):
     global list_keys
     list_keys = []
     for i in res:
-        keys = InlineKeyboardButton(row_width=1, text=i[3],  url=i[2], callback_data=f'tom{i[0]}')
+        keys = InlineKeyboardButton(row_width=1, text=i[3],  url=i[2], callback_data=f'keycontent{i[0]}')
         list_keys.append(keys)
-    menucontent.add(*list_keys).row(tom_keyL, tom_keyM, tom_keyR).row(tom_keyS)
+    menucontent.add(*list_keys).row(content_keyL, content_keyM, content_keyR).row(content_keyS)
+
+
+def del_main_menu(res):
+    global list_keys
+    list_keys = []
+    for i in res:
+        keys = InlineKeyboardButton(row_width=1, text=i[1], callback_data=f'del {i[0]}')
+        list_keys.append(keys)
+    delmainmenu.add(*list_keys).row(delkeyL, delkeyM, delkeyR)
+
+
+def del_menu_content(res):
+    global list_keys
+    list_keys = []
+    for i in res:
+        keys = InlineKeyboardButton(row_width=1, text=i[3], url=i[2], callback_data=f'keycontent{i[0]}')
+        list_keys.append(keys)
+    delmenucontent.add(*list_keys).row(del_content_keyL, del_content_keyM, del_content_keyR).row(del_content_keyS)
 
 
 mainmenu = InlineKeyboardMarkupWithClear(row_width=1)
 menucontent = InlineKeyboardMarkupWithClear(row_width=1)
 
+delmainmenu = InlineKeyboardMarkupWithClear(row_width=1)
+delmenucontent = InlineKeyboardMarkupWithClear(row_width=1)
 
 #Кнопки для перелистывения страниц на главной старницы
 keyL = InlineKeyboardButton(row_width=3, text='⬅️', callback_data='btnL')
-keyM = InlineKeyboardButton(row_width=3, text='⏹', callback_data='b')
+keyM = InlineKeyboardButton(row_width=3, text='⏹', callback_data='None')
 keyR = InlineKeyboardButton(row_width=3, text='➡️', callback_data='btnR')
 
 
 #Кнопки для перелистывения страниц на страницы с контентом
-tom_keyL = InlineKeyboardButton(row_width=3, text='⬅️', callback_data='buttonL')
-tom_keyM = InlineKeyboardButton(row_width=3, text='⏹ Вся манга', callback_data='buttonM')
-tom_keyR = InlineKeyboardButton(row_width=3, text='➡️', callback_data='buttonR')
-tom_keyS = InlineKeyboardButton(row_width=3, text='🔃 В конец/начало', callback_data='buttonS')
+content_keyL = InlineKeyboardButton(row_width=3, text='⬅️', callback_data='buttonL')
+content_keyM = InlineKeyboardButton(row_width=3, text='⏹ Вся манга', callback_data='buttonM')
+content_keyR = InlineKeyboardButton(row_width=3, text='➡️', callback_data='buttonR')
+content_keyS = InlineKeyboardButton(row_width=3, text='🔃 В конец/начало', callback_data='buttonS')
+
+
+#Кнопки для перелистывения страниц на главной старницы
+delkeyL = InlineKeyboardButton(row_width=3, text='⬅️', callback_data='delbtnL')
+delkeyM = InlineKeyboardButton(row_width=3, text='Отмена', callback_data='delbtnM')
+delkeyR = InlineKeyboardButton(row_width=3, text='➡️', callback_data='delbtnR')
+
+
+del_content_keyL = InlineKeyboardButton(row_width=3, text='⬅️', callback_data='delbuttonL')
+del_content_keyM = InlineKeyboardButton(row_width=3, text='⏹ Вся манга', callback_data='delbuttonM')
+del_content_keyR = InlineKeyboardButton(row_width=3, text='➡️', callback_data='delbuttonR')
+del_content_keyS = InlineKeyboardButton(row_width=3, text='🔃 В конец/начало', callback_data='delbuttonS')
+
 
 
 # Каналы на которые необходимо подписаться

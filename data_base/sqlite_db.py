@@ -54,8 +54,8 @@ async def sql_read_id_name(id):
     return cur.execute(f'SELECT * FROM manga_list WHERE id =={id}').fetchall()
 
 
-async def sql_read_del_name():
-    return cur.execute(f'SELECT * FROM manga_list').fetchall()
+# async def sql_read_del_name():
+#     return cur.execute(f'SELECT * FROM manga_list').fetchall()
 
 
 #Функция удаления названия на главной странице из базы данных

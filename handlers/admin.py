@@ -113,8 +113,31 @@ async def load_content_desc(message: types.Message, state: FSMContext):
 #Функция обратной связи удаления кнопки с названием на главной странице
 async def del_callback_main_menu(callback_query: types.CallbackQuery):
     await sqlite_db.sql_delete_name(callback_query.data.replace('del ', ''))
-    await callback_query.answer(text=f'{callback_query.data.replace("del ","")} удалена.', show_alert=True)
+    await callback_query.answer(text='Удаление прошло успешно.', show_alert=True)
     await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
+
+
+#Функция удаления названи кнопки на главной странице
+async def delete_main_menu(message: types.Message):
+    if message.from_user.id == ID:
+        inline.del_main_menu(await sqlite_db.sql_read_all_name(PAGE))
+        await bot.send_message(message.from_user.id,f'Выберите что удалить страница {PAGE}', reply_markup=inline.delmainmenu)
+
+
+async def callback_delbtn_main_menu(call: types.CallbackQuery):
+    global PAGE
+    id = call.data[-1]
+    if id == 'R' and PAGE != 50:
+        PAGE += 1
+    elif id == 'L' and PAGE != 1:
+        PAGE -= 1
+    elif id == 'M':
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+    if id == 'R' or id =='L':
+        await bot.answer_callback_query(call.id)
+        inline.del_main_menu(await sqlite_db.sql_read_all_name(PAGE))
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_message(call.from_user.id, f'Выберите что удалить страница {PAGE}', reply_markup=inline.delmainmenu)
 
 
 #Функция обратной связи удаления контента
@@ -122,15 +145,6 @@ async def del_callback_content(callback_query: types.CallbackQuery):
     await sqlite_db.sql_delete_content(callback_query.data.replace('dtom ', ''))
     await callback_query.answer(text=f'{callback_query.data.replace("dtom ","")} удалена.', show_alert=True)
     await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
-
-
-#Функция удаления названи кнопки на главной странице
-async def delete_main_menu(message: types.Message):
-    if message.from_user.id == ID:
-        read = await sqlite_db.sql_read_del_name()
-        for ret in read:
-            await bot.send_message(message.from_user.id, f'{ret[1]}\n')
-            await bot.send_message(message.from_user.id, text="^", reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(f'Удалить {ret[1]}', callback_data=f'del {ret[0]}')))
 
 
 #Функция удаления контента
@@ -154,7 +168,8 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(make_change_command, commands=['moderator'], is_chat_admin=True)
     dp.register_message_handler(delete_main_menu, commands=['удалить_мангу'])
     dp.register_message_handler(delete_content, commands=['удалить_том'])
-    dp.register_callback_query_handler(del_callback_main_menu, lambda x: x.data and x.data.startswith('del'))
+    dp.register_callback_query_handler(callback_delbtn_main_menu, text_contains=['delbtn'])
+    dp.register_callback_query_handler(del_callback_main_menu)
     dp.register_callback_query_handler(del_callback_content, lambda x: x.data and x.data.startswith('dtom'))
 
 
