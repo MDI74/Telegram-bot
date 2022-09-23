@@ -169,7 +169,7 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(delete_main_menu, commands=['удалить_мангу'])
     dp.register_message_handler(delete_content, commands=['удалить_том'])
     dp.register_callback_query_handler(callback_delbtn_main_menu, text_contains=['delbtn'])
-    dp.register_callback_query_handler(del_callback_main_menu)
+    dp.register_callback_query_handler(del_callback_main_menu,lambda x: x.data and x.data.startswith('delb'))
     dp.register_callback_query_handler(del_callback_content, lambda x: x.data and x.data.startswith('dtom'))
 
 
