@@ -61,7 +61,7 @@ async def main_menu(message: types.Message):
         await bot.send_message(message.from_user.id, 'Я не понимаю о чем вы')
 
 
-#Фукнция обратной связи для контента на главной странице
+#Фукнция обратной связи для заголовков на главной странице
 async def callback_main_menu(call: types.CallbackQuery):
     id = ''.join(call.data.split('key')[:])
     get_id(id)

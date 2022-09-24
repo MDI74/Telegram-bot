@@ -5,12 +5,19 @@ from aiogram.dispatcher.filters import Text
 from Bot import bot
 from data_base import sqlite_db
 from keyboards import admin_kb, inline
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import os
 
 ID = None
 PAGE = 1
 ADMIN_ID = os.getenv('ADMINS')
+SORT_CONT = False
+ID_MENU_CONT = 0
+
+
+#Функция получения id контента на главной странице
+def get_id(id):
+    global ID_MENU_CONT
+    ID_MENU_CONT = id
 
 
 #Класс машины состояния для загрузки контента
@@ -110,20 +117,21 @@ async def load_content_desc(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-#Функция обратной связи удаления кнопки с названием на главной странице
+#Функция обратной связи удаления заголовка в главном меню
 async def del_callback_main_menu(callback_query: types.CallbackQuery):
-    await sqlite_db.sql_delete_name(callback_query.data.replace('del ', ''))
+    await sqlite_db.sql_delete_name(callback_query.data.replace('delmain ', ''))
     await callback_query.answer(text='Удаление прошло успешно.', show_alert=True)
     await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
 
 
-#Функция удаления названи кнопки на главной странице
+#Функция удаления заголовка в главном меню
 async def delete_main_menu(message: types.Message):
     if message.from_user.id == ID:
         inline.del_main_menu(await sqlite_db.sql_read_all_name(PAGE))
         await bot.send_message(message.from_user.id,f'Выберите что удалить страница {PAGE}', reply_markup=inline.delmainmenu)
 
 
+#Функция перелистывания страниц в главном меню при удалении
 async def callback_delbtn_main_menu(call: types.CallbackQuery):
     global PAGE
     id = call.data[-1]
@@ -140,22 +148,91 @@ async def callback_delbtn_main_menu(call: types.CallbackQuery):
         await bot.send_message(call.from_user.id, f'Выберите что удалить страница {PAGE}', reply_markup=inline.delmainmenu)
 
 
-#Функция обратной связи удаления контента
+#Функция обратной связи для удаления выбранного контента
 async def del_callback_content(callback_query: types.CallbackQuery):
-    await sqlite_db.sql_delete_content(callback_query.data.replace('dtom ', ''))
-    await callback_query.answer(text=f'{callback_query.data.replace("dtom ","")} удалена.', show_alert=True)
+    await sqlite_db.sql_delete_content(callback_query.data.replace('delcontent ', ''))
+    await callback_query.answer(text='Удаление прошло успешно.', show_alert=True)
     await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
 
 
 #Функция удаления контента
 async def delete_content(message: types.Message):
     if message.from_user.id == ID:
-        read = await sqlite_db.sql_read_del_content()
-        for ret in read:
-            await bot.send_message(message.from_user.id, f'{ret[2]}\n, {ret[3]}')
-            await bot.send_message(message.from_user.id, text="^", reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(f'Удалить {ret[3]}', callback_data=f'dtom {ret[0]}')))
+        inline.del_content_main_menu(await sqlite_db.sql_read_all_name(PAGE))
+        await bot.send_message(message.from_user.id, f'Выберите что удалить страница {PAGE}', reply_markup=inline.delcontentmainmenu)
 
 
+#Функция перелистывания страниц в главном меню при удалении контента
+async def callback_del_contbtn_main_menu(call: types.CallbackQuery):
+    global PAGE
+    id = call.data[-1]
+    if id == 'R' and PAGE != 50:
+        PAGE += 1
+    elif id == 'L' and PAGE != 1:
+        PAGE -= 1
+    elif id == 'M':
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+    if id == 'R' or id =='L':
+        await bot.answer_callback_query(call.id)
+        inline.del_content_main_menu(await sqlite_db.sql_read_all_name(PAGE))
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_message(call.from_user.id, f'Выберите что удалить страница {PAGE}', reply_markup=inline.delcontentmainmenu)
+
+
+#Функция обратной связи для кнопок главномого меню при удалении контента
+async def callback_delcontmain_menu(call: types.CallbackQuery):
+    id = ''.join(call.data.split('delmaincontent')[:])
+    get_id(id)
+    name_manga = ''
+    id_main_c = 0
+    read = await sqlite_db.sql_read_id_name(id)
+    for res in read:
+        id_main_c = res[0]
+        name_manga = res[1]
+    inline.del_content(await sqlite_db.sql_read_all_content(id_main_c, PAGE))
+    await bot.delete_message(call.from_user.id, call.message.message_id)
+    await bot.send_message(call.from_user.id, f'Выберите что удалить в {name_manga} cтраница {PAGE}', reply_markup=inline.delcontent)
+
+
+#Функция для перелистывания страниц в меню контента при удалении контента
+async def callback_delbtn_menu_content(call: types.CallbackQuery):
+    global PAGE, SORT_CONT
+    id_main_c = 0
+    name_manga = ''
+    id = call.data[-1]
+    if id == 'R' and PAGE != 50:
+        PAGE += 1
+    elif id == 'L' and PAGE != 1:
+        PAGE -= 1
+    elif id == 'S':
+        PAGE = 1
+    elif id == 'M':
+        PAGE = 1
+        inline.del_content_main_menu(await sqlite_db.sql_read_all_name(PAGE))
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_message(call.from_user.id, f'Выберите что удалить страница {PAGE}', reply_markup=inline.delcontentmainmenu)
+    if id == 'R' or id == 'L' or id == 'S':
+        read = await sqlite_db.sql_read_id_name(ID_MENU_CONT)
+        for res in read:
+            id_main_c = res[0]
+            name_manga = res[1]
+        if id == 'S':
+            if SORT_CONT:
+                SORT_CONT = False
+                inline.del_content(await sqlite_db.sql_read_all_content(id_main_c, PAGE))
+            else:
+                SORT_CONT = True
+                inline.del_content(await sqlite_db.sql_read_desc_content(id_main_c, PAGE))
+        else:
+            if SORT_CONT:
+                inline.del_content(await sqlite_db.sql_read_desc_content(id_main_c, PAGE))
+            else:
+                inline.del_content(await sqlite_db.sql_read_all_content(id_main_c, PAGE))
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_message(call.from_user.id, f'Выберите что удалить в {name_manga} cтраница {PAGE}', reply_markup=inline.delcontent)
+
+
+#Регистрация хэндлеров администратора
 def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(cm_add, commands=['новая_манга'], state=None)
     dp.register_message_handler(add_main_menu, state=FSMAddContent.name_main)
@@ -168,9 +245,12 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(make_change_command, commands=['moderator'], is_chat_admin=True)
     dp.register_message_handler(delete_main_menu, commands=['удалить_мангу'])
     dp.register_message_handler(delete_content, commands=['удалить_том'])
-    dp.register_callback_query_handler(callback_delbtn_main_menu, text_contains=['delbtn'])
-    dp.register_callback_query_handler(del_callback_main_menu,lambda x: x.data and x.data.startswith('delb'))
-    dp.register_callback_query_handler(del_callback_content, lambda x: x.data and x.data.startswith('dtom'))
+    dp.register_callback_query_handler(callback_delbtn_main_menu, text_contains=['delmainbtn'])
+    dp.register_callback_query_handler(callback_del_contbtn_main_menu, text_contains=['delmaincontbtn'])
+    dp.register_callback_query_handler(callback_delcontmain_menu, text_contains=['delmaincontent'])
+    dp.register_callback_query_handler(callback_delbtn_menu_content, text_contains=['delcontbtn'])
+    dp.register_callback_query_handler(del_callback_main_menu, lambda x: x.data and x.data.startswith('delmain'))
+    dp.register_callback_query_handler(del_callback_content, lambda x: x.data and x.data.startswith('delcontent'))
 
 
 

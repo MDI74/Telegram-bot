@@ -54,10 +54,6 @@ async def sql_read_id_name(id):
     return cur.execute(f'SELECT * FROM manga_list WHERE id =={id}').fetchall()
 
 
-# async def sql_read_del_name():
-#     return cur.execute(f'SELECT * FROM manga_list').fetchall()
-
-
 #Функция удаления названия на главной странице из базы данных
 async def sql_delete_name(data):
     cur.execute('DELETE FROM manga_list WHERE id == ?', (data,))
@@ -73,10 +69,6 @@ async def sql_read_name_main_content(id):
 async def sql_read_all_content(id, page):
     id_start, id_end = page_list(page)
     return cur.execute(f'SELECT * FROM tom_list WHERE id_manga=={id} ORDER BY id LIMIT {id_start}, {id_end}').fetchall()
-
-
-async def sql_read_del_content():
-    return cur.execute('SELECT * FROM tom_list').fetchall()
 
 
 #Функция удаления контента из базы данных
